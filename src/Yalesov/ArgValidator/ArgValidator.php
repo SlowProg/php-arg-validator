@@ -109,7 +109,12 @@ class ArgValidator
    *      'bar' => array('string', 'notSet'),
    *     )
    *   = check that $arg['foo'] is int,
-          and $arg['bar'] is string, if set; or not set at all
+   *     and $arg['bar'] is string, if set; or not set at all
+   *    - 'default' key whose value is the default value
+   *  e.g. array(
+   *      'bar' => array('string', 'default' => null),
+   *     )
+   *   = $arg['bar'] is string, if set; or null if not set
    * @param bool $exception = true
    *  if false,
    *  will return false instead of throw exception on failed assertion
@@ -117,11 +122,20 @@ class ArgValidator
    * @return bool
    */
   public static function arrayAssert(
-    array $arg, array $checks, $exception = true)
+    array &$arg, array $checks, $exception = true)
   {
     foreach ($checks as $key => $memberChecks) {
+      if (is_array($memberChecks)
+        && $defaultExists = array_key_exists('default', $memberChecks)) {
+        $default = $memberChecks['default'];
+        unset($memberChecks['default']);
+      }
+      
       if (!isset($arg[$key])) {
-        if (in_array('notSet', (array) $memberChecks, true)) {
+        if ($defaultExists) {
+          $arg[$key] = $default;
+          continue;
+        } elseif (in_array('notSet', (array) $memberChecks, true)) {
           continue;
         } elseif (!$exception) {
           return false;
